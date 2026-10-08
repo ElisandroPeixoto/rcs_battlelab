@@ -1,7 +1,5 @@
-from importlib.resources import contents
-
 import flet as ft
-from flet.controls import border, border_radius
+
 
 # THEMES
 BG_PAGE = "#05070F"
