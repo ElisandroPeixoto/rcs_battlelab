@@ -26,7 +26,27 @@ class BattleBoard:
 cfg_battleboard = BattleBoard()
 
 
-# AUXILIARY FUNCTIONS
+# UNITS
+INITIAL_UNITS = {
+    "hero": {
+        "sprite": "hero3.gif", "w": 62, "h": 110,
+        "col": 0, "row": 4, "draggable": True,
+        "offset_x": 0, "offset_y": 20,
+    },
+    "monster": {
+        "sprite": "monster.gif", "w": 50, "h": 50,
+        "col": 9, "row": 4, "draggable": True,
+        "offset_x": 0, "offset_y": 6,
+    },
+}
+
+def sprite_box(u: dict, cx: float | int, cy: float | int):
+    left = cx - u["w"] / 2 + u.get("offset_x", 0)
+    top = cy - u["h"] + u.get("offset_y", 0)
+    return left, top, left + u["w"], top + u["h"]
+
+
+##### ------ AUXILIARY FUNCTIONS ------ #####
 def grid_to_screen(col: int, row: int, cfg: BattleBoard):
     """
     Input: Cols and Rows
@@ -49,7 +69,7 @@ def screen_to_grid(x: int, y: int, cfg: BattleBoard):
     return round((dx + dy) / 2), round((dy-dx) / 2)
 
 
-def draw_diamond(col, row, paint, cfg: BattleBoard):
+def draw_diamond(col, row, cfg: BattleBoard):
     """Draw the battleboard diamond form"""
     cx, cy = grid_to_screen(col, row, cfg)
     hw, hh = cfg.tile_w / 2, cfg.tile_h / 2
@@ -61,14 +81,7 @@ def draw_diamond(col, row, paint, cfg: BattleBoard):
         cv.Path.Close(),
 
     ],
-        paint=paint,
-    )
-
-
-def outline_paint():
-    return ft.Paint(
-        color=COLOR_GRID,
-        style=ft.PaintingStyle.STROKE, stroke_width=1
+        paint=ft.Paint(color=COLOR_GRID, style=ft.PaintingStyle.STROKE, stroke_width=1),
     )
 
 
@@ -77,7 +90,7 @@ def build_static_shapes(cfg: BattleBoard):
     if SHOW_GRID:
         for r in range(cfg.rows):
             for c in range(cfg.cols):
-                shapes.append(draw_diamond(c, r, outline_paint(), cfg))
+                shapes.append(draw_diamond(c, r, cfg))
 
     return shapes
 
@@ -87,32 +100,42 @@ STATIC_SHAPES = build_static_shapes(cfg_battleboard)
 @ft.component
 def battle_board():
     grid_overlay = cv.Canvas(shapes=list(STATIC_SHAPES), width=cfg_battleboard.width, height=cfg_battleboard.height)
+    units, set_units = ft.use_state(INITIAL_UNITS)  # Load the units
 
+    # Background Image
     background = ft.Image(src=cfg_battleboard.image,
                           width=cfg_battleboard.width,
                           height=cfg_battleboard.height,
                           fit=ft.BoxFit.FILL)
 
-    return ft.Stack(controls=[background, grid_overlay],
-                    width=cfg_battleboard.width,
-                    height=cfg_battleboard.height,
-                    )
+    # Build the pieces
+    tokens = []
+    for uid, u in sorted(units.items(), key=lambda kv: kv[1]["col"] + kv[1]["row"]):
+        cx, cy = grid_to_screen(u["col"], u["row"], cfg_battleboard)
+        left, top, _, _ = sprite_box(u, cx, cy)
+
+        visual = ft.Image(src=u["sprite"], width=u["w"], height=u["h"], fit=ft.BoxFit.CONTAIN)
+
+        visual.left, visual.top = left, top
+        tokens.append(visual)
 
 
-@ft.component
-def battle_page():
-    return ft.Container(
-        border=ft.Border.all(1, BORDER),
-        border_radius=6,
-        clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-        content=battle_board()
-    )
+    build_battle_page = ft.Container(border=ft.Border.all(1, BORDER),
+                                     border_radius=6,
+                                     clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                                     content=ft.Stack(controls=[background, grid_overlay, *tokens],  # Board Elements
+                                                      width=cfg_battleboard.width,
+                                                      height=cfg_battleboard.height,
+                                                      )
+                                     )
+
+    return build_battle_page
 
 
 def main(page: ft.Page):
     page.title = "Battlefield Board"
     page.padding = 0
-    page.render_views(lambda: ft.View(route="/", padding=0, controls=[battle_page()]))
+    page.render_views(lambda: ft.View(route="/", padding=0, controls=[battle_board()]))
     page.update()
 
 
