@@ -69,6 +69,11 @@ def screen_to_grid(x: int, y: int, cfg: BattleBoard):
     return round((dx + dy) / 2), round((dy-dx) / 2)
 
 
+def pointer_pos(e) -> tuple:
+    p = getattr(e, "local_position")
+    return p.x, p.y
+
+
 def draw_diamond(col, row, cfg: BattleBoard):
     """Draw the battleboard diamond form"""
     cx, cy = grid_to_screen(col, row, cfg)
@@ -99,6 +104,17 @@ STATIC_SHAPES = build_static_shapes(cfg_battleboard)
 
 @ft.component
 def battle_board():
+
+    def on_start(e):
+        print("start", pointer_pos(e))
+
+    def on_update(e):
+        print("update", pointer_pos(e))
+
+    def on_end(e):
+        print("end")
+
+
     grid_overlay = cv.Canvas(shapes=list(STATIC_SHAPES), width=cfg_battleboard.width, height=cfg_battleboard.height)
     units, set_units = ft.use_state(INITIAL_UNITS)  # Load the units
 
@@ -120,13 +136,22 @@ def battle_board():
         tokens.append(visual)
 
 
+    stage = ft.Stack(controls=[background, grid_overlay, *tokens],  # Board Elements
+                     width=cfg_battleboard.width,
+                     height=cfg_battleboard.height
+                     )
+
+    screen_detector = ft.GestureDetector(
+        content=stage,
+        on_pan_start=on_start,
+        on_pan_update=on_update,
+        on_pan_end=on_end,
+    )
+
     build_battle_page = ft.Container(border=ft.Border.all(1, BORDER),
                                      border_radius=6,
                                      clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-                                     content=ft.Stack(controls=[background, grid_overlay, *tokens],  # Board Elements
-                                                      width=cfg_battleboard.width,
-                                                      height=cfg_battleboard.height,
-                                                      )
+                                     content=screen_detector
                                      )
 
     return build_battle_page
@@ -135,7 +160,7 @@ def battle_board():
 def main(page: ft.Page):
     page.title = "Battlefield Board"
     page.padding = 0
-    page.render_views(lambda: ft.View(route="/", padding=0, controls=[battle_board()]))
+    page.render(battle_board)
     page.update()
 
 
