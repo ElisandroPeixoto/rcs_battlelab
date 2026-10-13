@@ -46,6 +46,21 @@ def sprite_box(u: dict, cx: float | int, cy: float | int):
     return left, top, left + u["w"], top + u["h"]
 
 
+##### ------ SCREEN DETECTIONS ------ #####
+_drag = {
+    "uid": None,     # unidade sendo arrastada
+    "gx": 0.0,       # offset do ponteiro em relação ao centro do tile do token
+    "gy": 0.0,
+    "x": 0.0,        # posição atual do token (centro do "tile" em pixels)
+    "y": 0.0,
+    "n": 0,          # contador para forçar re-render
+}
+
+def pointer_pos(e) -> tuple:
+    p = getattr(e, "local_position")
+    return p.x, p.y
+
+
 ##### ------ AUXILIARY FUNCTIONS ------ #####
 def grid_to_screen(col: int, row: int, cfg: BattleBoard):
     """
@@ -67,11 +82,6 @@ def screen_to_grid(x: int, y: int, cfg: BattleBoard):
     dy = (y - cfg.origin_y) / (cfg.tile_h / 2)
 
     return round((dx + dy) / 2), round((dy-dx) / 2)
-
-
-def pointer_pos(e) -> tuple:
-    p = getattr(e, "local_position")
-    return p.x, p.y
 
 
 def draw_diamond(col, row, cfg: BattleBoard):
@@ -104,15 +114,35 @@ STATIC_SHAPES = build_static_shapes(cfg_battleboard)
 
 @ft.component
 def battle_board():
+    _, set_tick = ft.use_state(0)
+
+    def refresh():
+        _drag["n"] += 1
+        set_tick(_drag["n"])
 
     def on_start(e):
-        print("start", pointer_pos(e))
+        px, py = pointer_pos(e)
+        for uid, u in sorted(units.items(), key=lambda kv: kv[1]["col"] + kv[1]["row"], reverse=True):
+            if not u.get("draggable"):
+                continue
+            cx, cy = grid_to_screen(u["col"], u["row"], cfg_battleboard)
+            left, top, right, bottom = sprite_box(u, cx, cy)
+            if left <= px <= right and top <= py <= bottom:
+                _drag.update(uid=uid, gx=px - cx, gy=py - cy, x=cx, y=cy)
+                refresh()
+                return
 
     def on_update(e):
-        print("update", pointer_pos(e))
+        if _drag["uid"] is None:
+            return
+        px, py = pointer_pos(e)
+        _drag["x"] = px - _drag["gx"]
+        _drag["y"] = py - _drag["gy"]
+        refresh()
 
     def on_end(e):
-        print("end")
+        _drag["uid"] = None
+        refresh()
 
 
     grid_overlay = cv.Canvas(shapes=list(STATIC_SHAPES), width=cfg_battleboard.width, height=cfg_battleboard.height)
@@ -127,7 +157,11 @@ def battle_board():
     # Build the pieces
     tokens = []
     for uid, u in sorted(units.items(), key=lambda kv: kv[1]["col"] + kv[1]["row"]):
-        cx, cy = grid_to_screen(u["col"], u["row"], cfg_battleboard)
+        if _drag["uid"] == uid:
+            cx, cy = _drag["x"], _drag["y"]
+        else:
+            cx, cy = grid_to_screen(u["col"], u["row"], cfg_battleboard)
+
         left, top, _, _ = sprite_box(u, cx, cy)
 
         visual = ft.Image(src=u["sprite"], width=u["w"], height=u["h"], fit=ft.BoxFit.CONTAIN)
