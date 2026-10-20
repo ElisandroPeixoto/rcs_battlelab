@@ -22,14 +22,14 @@ A regra de ouro do código: **a UI nunca altera o estado direto**. Ela chama `pe
 
 Em `mockup.py`, cada unidade é um **dicionário** com:
 
-| Grupo | Campos |
-|---|---|
-| Identidade | `name`, `job`, `team` ("player" ou "enemy") |
-| Posição | `col`, `row` (coordenada de tile, não de pixel) |
-| Status | `hp/max_hp`, `ap/max_ap` (AP = Pontos de Ação, exibido como "PA") |
-| Combate | `skills` (lista de nomes), `ai` (só o monstro) |
-| Visual | `sprite`, `width`, `height`, `offset_x/y`, `placeholder_color`, `avatar` |
-| Controle | `is_draggable` (só o herói) |
+| Grupo      | Campos                                                                   |
+|------------|--------------------------------------------------------------------------|
+| Identidade | `name`, `job`, `team` ("player" ou "enemy")                              |
+| Posição    | `col`, `row` (coordenada de tile, não de pixel)                          |
+| Status     | `hp/max_hp`, `ap/max_ap` (AP = Pontos de Ação, exibido como "PA")        |
+| Combate    | `skills` (lista de nomes), `ai` (só o monstro)                           |
+| Visual     | `sprite`, `width`, `height`, `offset_x/y`, `placeholder_color`, `avatar` |
+| Controle   | `is_draggable` (só o herói)                                              |
 
 Hoje existem duas unidades: o **herói** (50 HP, 5 AP, posição 0,4) e o **Poring** (50 HP, 2 AP, posição 9,4, IA `approach_and_attack`).
 
