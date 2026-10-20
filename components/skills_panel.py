@@ -15,7 +15,7 @@ def skill_button(name: str, skill: dict, is_selected: bool, enabled: bool, on_cl
     )
     return ft.Container(
         opacity=1 if enabled else 0.4,
-        on_click=on_click if enabled else None,
+        on_click=on_click,
         content=ft.Column(
             spacing=4, horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[icon, ft.Text(name, size=11, color=t.NORMAL_TEXT, font_family="Cinzel")],

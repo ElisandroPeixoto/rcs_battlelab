@@ -10,6 +10,7 @@ from components.skills_panel import skills_panel
 from components.battle_log_panel import battle_log_panel
 from components.turn_panel import turn_panel
 from services.battle_geometry import BoardConfig
+from services.battle_actions import SKILLS
 
 board_config = BoardConfig()
 
@@ -80,7 +81,9 @@ def battle_page():
     def handle_select_skill(name: str):
         if not player_can_act():
             return
-        set_selected_skill(None if selected_skill == name else name)   # clicar de novo desmarca
+        if state.current_unit()["ap"] < SKILLS[name]["ap_cost"]:
+            return
+        set_selected_skill(None if selected_skill == name else name)
 
     def handle_end_turn(e):
         if not player_can_act():
