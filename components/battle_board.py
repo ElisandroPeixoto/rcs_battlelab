@@ -1,10 +1,11 @@
 import flet as ft
 import flet.canvas as cv
-import os
-from services.battle_geometry import BoardConfig
-from mockup import INITIAL_UNITS
-from config import ASSETS_DIR
-from services.battle_geometry import is_inside_board, sort_units_by_depth, get_sprite_bounds, tile_to_pixel, pixel_to_tile
+from services.battle_state import BattleState
+from services.battle_geometry import (
+    is_inside_board, sort_units_by_depth, get_sprite_bounds, tile_to_pixel, pixel_to_tile,
+)
+from services.battle_actions import can_move, perform_move, perform_attack, get_attack_tiles
+from services.assets import asset_file_exists
 from components.battle_grid import STATIC_GRID_SHAPES, create_tile_diamond, create_fill_paint
 import themes as t
 
@@ -26,114 +27,128 @@ def get_pointer_position(event) -> tuple[float, float]:
         return position.x, position.y
     return event.local_x, event.local_y
 
-def asset_file_exists(file_name: str) -> bool:
-    return os.path.exists(os.path.join(ASSETS_DIR, file_name))
-
 
 # ============================================================
 # COMPONENT
+# state e selected_skill vêm da página; on_change(clear_skill=False) avisa a página
+# que o estado mudou (para atualizar cards, log e timer).
+# `version` só existe para a página poder forçar o re-render deste componente.
 # ============================================================
 @ft.component
-def battle_board():
-    board = BoardConfig()
-    units, set_units = ft.use_state(INITIAL_UNITS)
+def battle_board(state: BattleState, version: int, selected_skill: str | None, on_change):
+    board = state.board
+    units = state.units
     _, set_render_tick = ft.use_state(0)
 
     def force_rerender():
-        # Flet re-renders only when a state value changes. _drag_state is a plain
-        # dict, so we bump a counter to guarantee a new value every time.
         _drag_state["render_counter"] += 1
         set_render_tick(_drag_state["render_counter"])
 
-    def is_valid_destination(unit_id: str, col: int, row: int) -> bool:
-        if not is_inside_board(col, row, board):
-            return False
-        if (col, row) in board.blocked_tiles:
-            return False
-        # Occupied by ANOTHER unit? The dragged unit is excluded so it can
-        # be dropped back on its own tile.
-        return not any(
-            other["col"] == col and other["row"] == row
-            for other_id, other in units.items()
-            if other_id != unit_id
-        )
+    def player_can_act() -> bool:
+        return (state.winner is None and not state.input_locked
+                and state.current_unit()["team"] == "player")
 
     # ---------- gesture handlers ----------
     def handle_drag_start(event):
-        pointer_x, pointer_y = get_pointer_position(event)
+        if not player_can_act():
+            return
+        unit_id = state.current_unit_id            # só a unidade da vez pode ser arrastada
+        unit = units[unit_id]
+        if not unit.get("is_draggable"):
+            return
 
-        # Hit test: topmost unit first, so overlapping sprites pick the visible one.
-        for unit_id, unit in sort_units_by_depth(units, farthest_first=False):
-            if not unit.get("is_draggable"):
-                continue
-            tile_center_x, tile_center_y = tile_to_pixel(unit["col"], unit["row"], board)
-            left, top, right, bottom = get_sprite_bounds(unit, tile_center_x, tile_center_y)
-            if left <= pointer_x <= right and top <= pointer_y <= bottom:
-                _drag_state.update(
-                    unit_id=unit_id,
-                    # Remember WHERE inside the sprite it was grabbed, so it does not jump.
-                    grab_offset_x=pointer_x - tile_center_x,
-                    grab_offset_y=pointer_y - tile_center_y,
-                    token_x=tile_center_x,
-                    token_y=tile_center_y,
-                )
-                force_rerender()
-                return
+        pointer_x, pointer_y = get_pointer_position(event)
+        tile_center_x, tile_center_y = tile_to_pixel(unit["col"], unit["row"], board)
+        left, top, right, bottom = get_sprite_bounds(unit, tile_center_x, tile_center_y)
+        if left <= pointer_x <= right and top <= pointer_y <= bottom:
+            _drag_state.update(
+                unit_id=unit_id,
+                grab_offset_x=pointer_x - tile_center_x,
+                grab_offset_y=pointer_y - tile_center_y,
+                token_x=tile_center_x,
+                token_y=tile_center_y,
+            )
+            force_rerender()
 
     def handle_drag_update(event):
         if _drag_state["unit_id"] is None:
             return
         pointer_x, pointer_y = get_pointer_position(event)
-        # ABSOLUTE position (pointer - grab offset) instead of summing deltas,
-        # so small errors never accumulate.
         _drag_state["token_x"] = pointer_x - _drag_state["grab_offset_x"]
         _drag_state["token_y"] = pointer_y - _drag_state["grab_offset_y"]
         force_rerender()
-
 
     def handle_drag_end(event):
         unit_id = _drag_state["unit_id"]
         if unit_id is None:
             return
         target_col, target_row = pixel_to_tile(_drag_state["token_x"], _drag_state["token_y"], board)
-        if is_valid_destination(unit_id, target_col, target_row):
-            # Build NEW dicts: Flet only re-renders when it receives a new object.
-            set_units({**units, unit_id: {**units[unit_id], "col": target_col, "row": target_row}})
-        # Invalid drop needs no special case: units is unchanged, so the unit
-        # is simply drawn on its old tile again.
+        result = perform_move(state, unit_id, target_col, target_row)   # valida PA, ocupação, limites
         _drag_state["unit_id"] = None
         force_rerender()
+        if result["ok"]:
+            on_change()
+        elif result["reason"] != "already on this tile":
+            print(f"[move] {result['reason']}")
+
+    def handle_tap(event):
+        """Modo ataque: com uma skill selecionada, clicar no inimigo ataca."""
+        if not selected_skill or not player_can_act():
+            return
+        attacker_id = state.current_unit_id
+        attacker_team = units[attacker_id]["team"]
+        pointer_x, pointer_y = get_pointer_position(event)
+
+        for unit_id, unit in sort_units_by_depth(units, farthest_first=False):
+            if unit["hp"] <= 0 or unit["team"] == attacker_team:
+                continue
+            center_x, center_y = tile_to_pixel(unit["col"], unit["row"], board)
+            left, top, right, bottom = get_sprite_bounds(unit, center_x, center_y)
+            if left <= pointer_x <= right and top <= pointer_y <= bottom:
+                result = perform_attack(state, attacker_id, unit_id, selected_skill)
+                if result["ok"]:
+                    on_change(clear_skill=True)
+                else:
+                    print(f"[attack] {result['reason']}")
+                return
 
     # ---------- layer 1: background ----------
     if asset_file_exists(board.background_image):
         background = ft.Image(src=board.background_image, width=board.width,
-                              height=board.height, fit=ft.BoxFit.FILL)  # FILL keeps 1:1 with the canvas
+                              height=board.height, fit=ft.BoxFit.FILL)
     else:
         background = ft.Container(width=board.width, height=board.height,
                                   bgcolor=t.PLACEHOLDER_BACKGROUND_COLOR)
 
-
-    # ---------- layer 2: grid + drop-target highlight ----------
-    grid_shapes = list(STATIC_GRID_SHAPES)  # copy, so the highlight is not added to the shared list
+    # ---------- layer 2: grid + destaques ----------
+    grid_shapes = list(STATIC_GRID_SHAPES)
     dragged_unit_id = _drag_state["unit_id"]
+
     if dragged_unit_id is not None:
+        # destino do arraste: verde se can_move, vermelho se não
         hover_col, hover_row = pixel_to_tile(_drag_state["token_x"], _drag_state["token_y"], board)
-        if is_inside_board(hover_col, hover_row, board):
-            is_valid = is_valid_destination(dragged_unit_id, hover_col, hover_row)
-            highlight_color = t.VALID_TILE_COLOR if is_valid else t.INVALID_TILE_COLOR
-            grid_shapes.append(create_tile_diamond(hover_col, hover_row, create_fill_paint(highlight_color), board))
+        if is_inside_board(hover_col, hover_row, board) and (hover_col, hover_row) != (
+                units[dragged_unit_id]["col"], units[dragged_unit_id]["row"]):
+            is_valid, _, _ = can_move(state, dragged_unit_id, hover_col, hover_row)
+            color = t.VALID_TILE_COLOR if is_valid else t.INVALID_TILE_COLOR
+            grid_shapes.append(create_tile_diamond(hover_col, hover_row, create_fill_paint(color), board))
+    elif selected_skill and player_can_act():
+        # modo ataque: destaca os tiles que a skill alcança
+        for col, row in get_attack_tiles(state, state.current_unit_id, selected_skill):
+            grid_shapes.append(create_tile_diamond(col, row, create_fill_paint(t.ATTACK_TILE_COLOR), board))
 
     grid_layer = cv.Canvas(shapes=grid_shapes, width=board.width, height=board.height)
 
-
-    # ---------- layer 3: unit sprites ----------
-    units_by_depth = sort_units_by_depth(units)  # painting order: farthest first
+    # ---------- layer 3: sprites (só unidades vivas) ----------
+    drawn_ids = []
     sprite_controls = []
-    for unit_id, unit in units_by_depth:
+    for unit_id, unit in sort_units_by_depth(units):
+        if unit["hp"] <= 0:
+            continue
         if unit_id == dragged_unit_id:
-            center_x, center_y = _drag_state["token_x"], _drag_state["token_y"]  # follows the pointer
+            center_x, center_y = _drag_state["token_x"], _drag_state["token_y"]
         else:
-            center_x, center_y = tile_to_pixel(unit["col"], unit["row"], board)  # rests on its tile
+            center_x, center_y = tile_to_pixel(unit["col"], unit["row"], board)
 
         left, top, _, _ = get_sprite_bounds(unit, center_x, center_y)
 
@@ -143,14 +158,12 @@ def battle_board():
         else:
             sprite = ft.Container(width=unit["width"], height=unit["height"],
                                   bgcolor=unit["placeholder_color"], border_radius=6)
-        sprite.left, sprite.top = left, top  # absolute position inside the Stack
+        sprite.left, sprite.top = left, top
         sprite_controls.append(sprite)
+        drawn_ids.append(unit_id)
 
-    # The dragged sprite goes on top of everything. Both lists share the same
-    # order, so the unit's index in units_by_depth is its index in sprite_controls.
-    if dragged_unit_id is not None:
-        dragged_index = [unit_id for unit_id, _ in units_by_depth].index(dragged_unit_id)
-        sprite_controls.append(sprite_controls.pop(dragged_index))
+    if dragged_unit_id is not None and dragged_unit_id in drawn_ids:
+        sprite_controls.append(sprite_controls.pop(drawn_ids.index(dragged_unit_id)))
 
     stage = ft.Stack(
         controls=[background, grid_layer, *sprite_controls],
@@ -160,6 +173,7 @@ def battle_board():
 
     gesture_detector = ft.GestureDetector(
         content=stage,
+        on_tap_down=handle_tap,
         on_pan_start=handle_drag_start,
         on_pan_update=handle_drag_update,
         on_pan_end=handle_drag_end,

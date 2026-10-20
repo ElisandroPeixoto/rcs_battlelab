@@ -1,12 +1,10 @@
 import os
 import flet as ft
 import themes as t
-from services.battle_geometry import BoardConfig
 from pages.battle_page import battle_page
 
 
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
-board_config = BoardConfig()
 
 
 def main(page: ft.Page):
