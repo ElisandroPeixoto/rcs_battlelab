@@ -11,7 +11,6 @@ def skill_button(name: str, skill: dict, is_selected: bool, enabled: bool, on_cl
         border=ft.Border.all(2 if is_selected else 1, t.CARD_BORDER_SELECTED if is_selected else t.CARD_BORDER),
         alignment=ft.Alignment.CENTER,
         image=ft.DecorationImage(src=icon_src, fit=ft.BoxFit.COVER),
-        content=ft.Icon(ft.Icons.STAR, color=t.TITLE_TEXT, size=22),
     )
     return ft.Container(
         opacity=1 if enabled else 0.4,

@@ -54,7 +54,7 @@ def passive(state: BattleState, unit_id: str):
 
 
 def attack_every_turn(state: BattleState, unit_id: str):
-    """Ataca o inimigo mais próximo enquanto der (não anda)."""
+    """Attack the closest enemy when its possible - Do not move"""
     skill = _main_skill(state.units[unit_id])
     while not state.winner:
         target_id = _nearest_enemy_id(state, unit_id)
@@ -67,7 +67,7 @@ def attack_every_turn(state: BattleState, unit_id: str):
 
 
 def approach_and_attack(state: BattleState, unit_id: str):
-    """Se não alcança o alvo, anda até ele; depois ataca enquanto tiver PA."""
+    """If it does not reach the target, move; Attack when its possible and have AP"""
     skill = _main_skill(state.units[unit_id])
     target_id = _nearest_enemy_id(state, unit_id)
     if target_id is None:

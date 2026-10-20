@@ -3,7 +3,7 @@ INITIAL_UNITS = {
     "hero": {
         "name": "Character", "job": "Novice", "team": "player",
         "sprite": "hero3.gif", "width": 62, "height": 110,
-        "avatar": "characters_badges/0_novice_badge.png",
+        "avatar": "0. Novice_badge.png",
 
         "col": 0, "row": 4, "is_draggable": True,
         "placeholder_color": "#2E5BFF",
@@ -18,7 +18,7 @@ INITIAL_UNITS = {
     "monster": {
         "name": "Poring", "team": "enemy",
         "sprite": "monster.gif", "width": 50, "height": 50,
-        "avatar": "monsters/poring.gif",
+        "avatar": "monster.gif",
         "ai": "approach_and_attack",
 
         "col": 9, "row": 4, "is_draggable": False,

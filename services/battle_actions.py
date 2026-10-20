@@ -8,7 +8,7 @@ SKILLS = {  # TODO: INSERT ON BACKEND
         "ap_cost": 1,
         "damage": 10,
         "range": 1,
-        "icon": "skills/basic_attack.png"
+        "icon": "Basic Attack.png"
     }
 }
 
