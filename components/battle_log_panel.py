@@ -15,15 +15,16 @@ def battle_log_panel(entries, width: int, height: int):
         bgcolor=t.CARD_BG,
         border=ft.Border.all(1, t.CARD_BORDER),
         padding=10,
-        content=ft.Column(spacing=8, controls=[
-            ft.Text("Battle Log", size=18, color=t.NORMAL_TEXT, font_family="Cinzel"),
-            ft.Container(
-                expand=True,
-                bgcolor="#080A12",
-                border=ft.Border.all(1, t.CARD_BORDER),
-                padding=8,
-                content=ft.Column(spacing=4, scroll=ft.ScrollMode.AUTO, auto_scroll=True,
-                                  controls=[log_row(e) for e in entries]),
-            ),
-        ]),
+        content=ft.Column(spacing=8, expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+                          controls=[
+                              ft.Text("Battle Log", size=18, color=t.NORMAL_TEXT, font_family="Cinzel"),
+                              ft.Container(
+                                  expand=True,
+                                  bgcolor="#080A12",
+                                  border=ft.Border.all(1, t.CARD_BORDER),
+                                  padding=8,
+                                  content=ft.Column(spacing=4, scroll=ft.ScrollMode.AUTO, auto_scroll=True,
+                                                    controls=[log_row(e) for e in entries]),
+                              ),
+                          ]),
     )
