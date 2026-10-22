@@ -24,6 +24,8 @@ CONTENT_WIDTH = LEFT_WIDTH + GAP + BOARD_WIDTH
 
 ENEMY_ACTION_DELAY = 0.7      # segundos entre as ações do monstro (para dar para acompanhar)
 TICK_INTERVAL = 0.25          # o loop acorda 4x por segundo; o relógio do turno conta 1x por segundo
+ANIM_INTERVAL = 1 / 12      # ~12 re-renders por segundo; baixe para 1/8 se pesar
+
 
 @ft.component
 def battle_page():
@@ -66,7 +68,14 @@ def battle_page():
                         else:
                             refresh()
 
+        async def anim_loop():
+            while not state.closed:  # não para no winner, para o "dead" terminar de tocar
+                await asyncio.sleep(ANIM_INTERVAL)
+                refresh()
+
         ft.context.page.run_task(turn_loop)
+        ft.context.page.run_task(anim_loop)
+
 
     def on_unmount():
         state.closed = True       # para o loop quando a tela sair

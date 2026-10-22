@@ -8,6 +8,7 @@ from services.battle_actions import can_move, perform_move, perform_attack, get_
 from services.assets import asset_file_exists
 from components.battle_grid import STATIC_GRID_SHAPES, create_tile_diamond, create_fill_paint
 import themes as t
+from components.unit_sprite import unit_sprite
 
 
 _drag_state = {
@@ -143,8 +144,9 @@ def battle_board(state: BattleState, version: int, selected_skill: str | None, o
     drawn_ids = []
     sprite_controls = []
     for unit_id, unit in sort_units_by_depth(units):
-        if unit["hp"] <= 0:
-            continue
+        has_sheet = bool(unit.get("sheet"))
+        if unit["hp"] <= 0 and not has_sheet:
+            continue  # sem sheet não há animação de morte: some na hora
         if unit_id == dragged_unit_id:
             center_x, center_y = _drag_state["token_x"], _drag_state["token_y"]
         else:
@@ -152,7 +154,9 @@ def battle_board(state: BattleState, version: int, selected_skill: str | None, o
 
         left, top, _, _ = get_sprite_bounds(unit, center_x, center_y)
 
-        if asset_file_exists(unit["sprite"]):
+        if has_sheet:
+            sprite = unit_sprite(unit, left, top)
+        elif asset_file_exists(unit["sprite"]):
             sprite = ft.Image(src=unit["sprite"], width=unit["width"],
                               height=unit["height"], fit=ft.BoxFit.CONTAIN)
         else:

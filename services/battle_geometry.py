@@ -1,4 +1,6 @@
 # BattleBoard Main Class
+from services.battle_animation import get_sheet
+
 
 class BoardConfig:
     def __init__(self):
@@ -74,10 +76,13 @@ def sort_units_by_depth(units: dict, farthest_first: bool = True) -> list[tuple[
 
 
 def get_sprite_bounds(unit: dict, tile_center_x: float, tile_center_y: float):
-    """
-    Return (left, top, right, bottom) of the sprite box for a given tile center.
-    The sprite is anchored by its FEET
-    """
+    """(left, top, right, bottom) da caixa do sprite; os pés ficam no centro do tile."""
+    if unit.get("sheet"):
+        sheet = get_sheet(unit["sheet"])
+        left = tile_center_x - sheet.anchor_x + unit.get("offset_x", 0)
+        top = tile_center_y - sheet.anchor_y + unit.get("offset_y", 0)
+        return left, top, left + sheet.frame_w, top + sheet.frame_h
+
     left = tile_center_x - unit["width"] / 2 + unit.get("offset_x", 0)
     top = tile_center_y - unit["height"] + unit.get("offset_y", 0)
     return left, top, left + unit["width"], top + unit["height"]

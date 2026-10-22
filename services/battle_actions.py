@@ -1,6 +1,7 @@
 from services.battle_geometry import is_inside_board
 from services.battle_state import BattleState
 from services.battle_log import LogEntry
+from services.battle_animation import play, face_towards
 
 
 SKILLS = {  # TODO: INSERT ON BACKEND
@@ -63,8 +64,13 @@ def perform_attack(state: BattleState, attacker_id: str, target_id: str, skill_n
     attacker["ap"] -= skill["ap_cost"]
     target["hp"] = max(0, target["hp"] - skill["damage"])
 
-    state.log.add(LogEntry(round=state.round, kind="attack", actor=attacker["name"],
-                           target=target["name"], skill=skill_name, damage=skill["damage"]))  # noqa
+    face_towards(attacker, target["col"], target["row"])
+    play(attacker, "attack")
+    if target["hp"] == 0:
+        play(target, "dead")
+    else:
+        face_towards(target, attacker["col"], attacker["row"])
+        play(target, "hurt")
 
     target_dead = target["hp"] == 0
     if target_dead:
@@ -120,6 +126,7 @@ def perform_move(state: BattleState, unit_id: str, col: int, row: int) -> dict:
         return {"ok": False, "reason": reason, "tiles": 0}
 
     unit = state.units[unit_id]
+    face_towards(unit, col, row)
     unit["col"], unit["row"] = col, row
     unit["ap"] -= cost
 

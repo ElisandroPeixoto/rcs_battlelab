@@ -1,0 +1,135 @@
+{
+  "src": "sprites/novice/novice_sheet.png",
+  "frame_w": 128,
+  "frame_h": 106,
+  "cols": 9,
+  "rows": 20,
+  "anchor_x": 64,
+  "anchor_y": 81,
+  "clips": {
+    "idle_se": {
+      "row": 0,
+      "frames": 6,
+      "fps": 10.0,
+      "loop": true
+    },
+    "idle_sw": {
+      "row": 1,
+      "frames": 6,
+      "fps": 10.0,
+      "loop": true
+    },
+    "idle_nw": {
+      "row": 2,
+      "frames": 6,
+      "fps": 10.0,
+      "loop": true
+    },
+    "idle_ne": {
+      "row": 3,
+      "frames": 6,
+      "fps": 10.0,
+      "loop": true
+    },
+    "walk_se": {
+      "row": 4,
+      "frames": 8,
+      "fps": 13.3,
+      "loop": true
+    },
+    "walk_sw": {
+      "row": 5,
+      "frames": 8,
+      "fps": 13.3,
+      "loop": true
+    },
+    "walk_nw": {
+      "row": 6,
+      "frames": 8,
+      "fps": 13.3,
+      "loop": true
+    },
+    "walk_ne": {
+      "row": 7,
+      "frames": 8,
+      "fps": 13.3,
+      "loop": true
+    },
+    "attack_se": {
+      "row": 8,
+      "frames": 9,
+      "fps": 10.0,
+      "loop": false
+    },
+    "attack_sw": {
+      "row": 9,
+      "frames": 9,
+      "fps": 10.0,
+      "loop": false
+    },
+    "attack_nw": {
+      "row": 10,
+      "frames": 9,
+      "fps": 10.0,
+      "loop": false
+    },
+    "attack_ne": {
+      "row": 11,
+      "frames": 9,
+      "fps": 10.0,
+      "loop": false
+    },
+    "hurt_se": {
+      "row": 12,
+      "frames": 3,
+      "fps": 10.0,
+      "loop": false
+    },
+    "hurt_sw": {
+      "row": 13,
+      "frames": 3,
+      "fps": 10.0,
+      "loop": false
+    },
+    "hurt_nw": {
+      "row": 14,
+      "frames": 3,
+      "fps": 10.0,
+      "loop": false
+    },
+    "hurt_ne": {
+      "row": 15,
+      "frames": 3,
+      "fps": 10.0,
+      "loop": false
+    },
+    "dead_se": {
+      "row": 16,
+      "frames": 1,
+      "fps": 10.0,
+      "loop": false,
+      "hold_last": true
+    },
+    "dead_sw": {
+      "row": 17,
+      "frames": 1,
+      "fps": 10.0,
+      "loop": false,
+      "hold_last": true
+    },
+    "dead_nw": {
+      "row": 18,
+      "frames": 1,
+      "fps": 10.0,
+      "loop": false,
+      "hold_last": true
+    },
+    "dead_ne": {
+      "row": 19,
+      "frames": 1,
+      "fps": 10.0,
+      "loop": false,
+      "hold_last": true
+    }
+  }
+}

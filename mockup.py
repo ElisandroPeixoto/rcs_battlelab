@@ -2,12 +2,11 @@
 INITIAL_UNITS = {
     "hero": {
         "name": "Character", "job": "Novice", "team": "player",
-        "sprite": "hero3.gif", "width": 62, "height": 110,
-        "avatar": "0. Novice_badge.png",
+        "sheet": "novice", "facing": "se",          # <- no lugar de sprite/width/height
+        "avatar": "characters_badges/0_novice_badge.png",
 
         "col": 0, "row": 4, "is_draggable": True,
-        "placeholder_color": "#2E5BFF",
-        "offset_x": 0, "offset_y": 20,
+        "offset_x": 0, "offset_y": 0,               # ajuste fino se os pés não alinharem com o tile
 
         "hp": 50, "max_hp": 50,
         "ap": 5, "max_ap": 5,
