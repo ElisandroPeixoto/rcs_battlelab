@@ -1,10 +1,10 @@
 {
   "src": "sprites/novice/novice_sheet.png",
-  "frame_w": 128,
+  "frame_w": 110,
   "frame_h": 106,
   "cols": 9,
   "rows": 20,
-  "anchor_x": 64,
+  "anchor_x": 55,
   "anchor_y": 81,
   "clips": {
     "idle_se": {
